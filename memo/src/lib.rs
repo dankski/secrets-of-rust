@@ -1,23 +1,36 @@
-use std::path::Path;
-use std::io::BufReader;
-use std::io::BufRead;
-use std::io::Result;
-use std::fs::File;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Result};
+use std::path::{Path, PathBuf};
 
+pub struct Memos {
+  path: PathBuf,
+  pub inner: Vec<String>,
+}
+ 
+impl Memos {
 
-pub fn open(path: impl AsRef<Path>) -> Result<Vec<String>> {
-  if fs::exists(&path)? {
-    let file = BufReader::new(File::open(&path)?);
-    file.lines().collect()
-  } else {
-    Ok(Vec::new())
+  pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+    let mut memos = Self {
+      path: PathBuf::from(path.as_ref()),
+      inner: Vec::new(),
+    };
+
+    if fs::exists(&path)? {
+      let file = BufReader::new(File::open(&path)?);
+      for memo in file.lines() {
+        memos.inner.push(memo?);
+      }
+    }
+
+    Ok(memos)
   }
+  
+  pub fn sync(&self) -> Result<()> {
+    fs::write(&self.path, self.inner.join("\n"))
+  }
+
 }
 
-pub fn sync(memos: &[String], path: impl AsRef<Path>) -> Result<()> {
-  fs::write(&path, memos.join("\n"))
-}
 
 #[cfg(test)]
 mod tests {
@@ -26,29 +39,32 @@ mod tests {
   use super::*;
 
   #[test]
-  fn should_open_a_file() {
-    let memos = open("tests/data/memos.txt").unwrap();
+  fn should_return_data_from_given_file() {
+    let memos = Memos::open("tests/data/memos.txt").unwrap();
     
-    assert_eq!(memos, vec!["foo", "bar"], "wrong data");
+    assert_eq!(memos.inner, vec!["foo", "bar"], "wrong data");
   }
 
   #[test]
   fn should_return_empty_vec_for_missing_file() {
-    let memos = open("bogus.txt").unwrap();
+    let memos = Memos::open("bogus.txt").unwrap();
 
-    assert!(memos.is_empty(), "vec not empty");
+    assert!(memos.inner.is_empty(), "vec not empty");
   }
   
   #[test]
   fn should_write_vec_to_file() {
     let dir = tempdir().unwrap();
     let path = dir.path().join("memos.txt");
-    let vec = vec!["foo".to_string(), "bar".to_string()];
+    let memos = Memos {
+      path: path.clone(),
+      inner: vec!["foo".to_string(), "bar".to_string()],
+    };
     
-    sync(&vec, &path).unwrap();
+    memos.sync().unwrap();
 
-    let memos = open(&path).unwrap();
+    let memos = Memos::open(&path).unwrap();
 
-    assert_eq!(memos, vec, "wrong data");
+    assert_eq!(memos.inner, vec!["foo".to_string(), "bar".to_string()], "wrong data");
   }
 }

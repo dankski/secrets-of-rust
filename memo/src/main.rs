@@ -2,21 +2,21 @@ use anyhow::Result;
 
 use std::env;
 
-use memo::{open, sync};
+use memo::Memos;
 
 
 fn main() -> Result<()> {
-  let mut memos: Vec<String> = open("memo.txt")?;
+  let mut memos = Memos::open("memo.txt")?;
   let args: Vec<_> = env::args().skip(1).collect();
 
   if args.is_empty() {
-    for memo in &memos {
+    for memo in &memos.inner {
       println!("{memo}");
     }
   } else {
     let memo = args.join(" ");
-    memos.push(memo);
-    sync(&memos, "memo.txt")?;
+    memos.inner.push(memo);
+    memos.sync()?;
   }
   Ok(())
 }
