@@ -1,10 +1,26 @@
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Result};
 use std::path::{Path, PathBuf};
+use std::fmt::Display;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum Status {
+  Pending,
+  Done,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Memo {
+  pub text: String,
+  pub status: Status,
+}
+
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct Memos {
   path: PathBuf,
-  pub inner: Vec<String>,
+  pub inner: Vec<Memo>,
 }
  
 impl Memos {
@@ -16,17 +32,17 @@ impl Memos {
     };
 
     if fs::exists(&path)? {
-      let file = BufReader::new(File::open(&path)?);
-      for memo in file.lines() {
-        memos.inner.push(memo?);
-      }
+      let file = File::open(path.as_ref());
+      memos.inner = serde_json::from_reader(BufReader::new(file))?;
     }
 
     Ok(memos)
   }
   
   pub fn sync(&self) -> Result<()> {
-    fs::write(&self.path, self.inner.join("\n"))
+    lef file = File::create(&self.path)?;
+    serde_json::to_writer(BufWriter::new(file), &self.inner)?;
+    Ok(())
   }
 
 }
@@ -42,7 +58,20 @@ mod tests {
   fn should_return_data_from_given_file() {
     let memos = Memos::open("tests/data/memos.txt").unwrap();
     
-    assert_eq!(memos.inner, vec!["foo", "bar"], "wrong data");
+    assert_eq!(
+      memos.inner,
+      vec![
+          Memo {
+                text: "foo".to_string(),
+                status: Status::Pending,
+          },
+          Memo {
+            text: "bar".to_string(),
+            status: Status::Pending,
+          }
+      ],
+      "wrong data"
+    );
   }
 
   #[test]
@@ -58,13 +87,22 @@ mod tests {
     let path = dir.path().join("memos.txt");
     let memos = Memos {
       path: path.clone(),
-      inner: vec!["foo".to_string(), "bar".to_string()],
+      inner: vec![
+        Memo {
+          text: "foo".to_string(),
+          status: Status::Pending,
+        },
+        Memo {
+          text: "bar".to_string(),
+          status: Status::Pending,
+        }
+      ],
     };
     
     memos.sync().unwrap();
 
-    let memos = Memos::open(&path).unwrap();
+    let memos_2 = Memos::open(&path).unwrap();
 
-    assert_eq!(memos.inner, vec!["foo".to_string(), "bar".to_string()], "wrong data");
+    assert_eq!(memos.inner, memos_2.inner, "wrong data");
   }
 }
