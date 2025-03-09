@@ -2,11 +2,11 @@ use anyhow::Result;
 
 use std::env;
 
-use memo::Memos;
+use memo::{Memo, Memos, Status};
 
 
 fn main() -> Result<()> {
-  let mut memos = Memos::open("memo.txt")?;
+  let mut memos = Memos::open("memo.json")?;
   let args: Vec<_> = env::args().skip(1).collect();
 
   if args.is_empty() {
@@ -14,8 +14,11 @@ fn main() -> Result<()> {
       println!("{memo}");
     }
   } else {
-    let memo = args.join(" ");
-    memos.inner.push(memo);
+    let text = args.join(" ");
+    memos.inner.push(Memo {
+      text,
+      status: Status::Pending,
+    });
     memos.sync()?;
   }
   Ok(())
