@@ -1,25 +1,45 @@
 use anyhow::Result;
 
-use std::env;
+use clap::Parser;
 
 use memo::{Memo, Memos, Status};
 
+#[derive(Parser)]
+struct Args {
+  #[arg(short, long)]
+  done: bool,
+  #[arg(short, long)]
+  purge: bool,
+  text: Vec<String>,
+}
 
 fn main() -> Result<()> {
-  let mut memos = Memos::open("memo.json")?;
-  let args: Vec<_> = env::args().skip(1).collect();
+  let args = Args::parse();
 
-  if args.is_empty() {
+  let mut memos = Memos::open("memos.json")?;
+  let text = args.text.join(" ");
+
+  if args.done {
+    for m in memos.find_all(&text) {
+      m.status = Status::Done;
+      println!("Marked \"{}\" as done.", m.text);
+    }
+    memos.sync()?;
+  } else if args.purge {
+    memos.purge_done();
+    memos.sync()?;
+  } else if args.text.is_empty() {
     for memo in &memos.inner {
       println!("{memo}");
     }
   } else {
-    let text = args.join(" ");
     memos.inner.push(Memo {
-      text,
+      text: text.clone(),
       status: Status::Pending,
     });
+    println!("Added \"{}\" as a new memo.", &text);
     memos.sync()?;
   }
+
   Ok(())
 }

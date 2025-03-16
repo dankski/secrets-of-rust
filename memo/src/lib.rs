@@ -41,6 +41,17 @@ pub struct Memos {
  
 impl Memos {
 
+  pub fn find_all(&mut self, text: &str) -> Vec<&mut Memo> {
+    self.inner
+      .iter_mut()
+      .filter(|m| m.text.contains(text))
+      .collect()
+  }
+
+  pub fn purge_done(&mut self) {
+    self.inner.retain(|m| m.status != Status::Done);
+  }
+
   pub fn open(path: impl AsRef<Path>) -> Result<Self> {
     let mut memos = Self {
       path: PathBuf::from(path.as_ref()),
@@ -126,5 +137,63 @@ mod tests {
     let memos_2 = Memos::open(&path).unwrap();
 
     assert_eq!(memos.inner, memos_2.inner, "wrong data");
+  }
+
+  #[test]
+  fn find_all_fn_returns_all_memos_matching_substring() {
+    let mut memos = Memos {
+      path: PathBuf::from("dummy"),
+      inner: vec![
+        Memo {
+          text: "foo".to_string(),
+          status: Status::Pending,
+        },
+        Memo {
+          text: "bar".to_string(),
+          status: Status::Pending,
+        },
+        Memo {
+          text: "food".to_string(),
+          status: Status::Pending,
+        }
+      ],
+    };
+
+    let found: Vec<&mut Memo> = memos.find_all("foo");
+
+    assert_eq!(found.len(), 2, "wrong number of matches");
+    assert_eq!(found[0].text, "foo", "wrong match");
+    assert_eq!(found[1].text, "food", "wrong match");
+  }
+
+  #[test]
+  fn purge_done_fn_deletes_all_memos_with_done_status() {
+    let mut memos = Memos {
+      path: PathBuf::from("dummy"),
+      inner: vec![
+        Memo {
+          text: "foo".to_string(),
+          status: Status::Done,
+        },
+        Memo {
+          text: "bar".to_string(),
+          status: Status::Done,
+        },
+        Memo {
+          text: "food".to_string(),
+          status: Status::Pending,
+        },
+      ],
+    };
+
+    memos.purge_done();
+    assert_eq!(
+      memos.inner,
+      vec![Memo {
+            text: "food".to_string(),
+            status: Status::Pending,
+          },],
+          "wrong data"
+      );
   }
 }
