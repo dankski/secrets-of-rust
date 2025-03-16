@@ -78,26 +78,30 @@ mod tests {
     assert!(memos.inner.is_empty(), "vec not empty");
   }
 
-//  #[test]
-//  fn should_return_data_from_given_file() {
-//    let memos = Memos::open("tests/data/memos.txt").unwrap();
-//    
-//    assert_eq!(
-//      memos.inner,
-//      vec![
-//          Memo {
-//                text: "foo".to_string(),
-//                status: Status::Pending,
-//          },
-//          Memo {
-//            text: "bar".to_string(),
-//            status: Status::Pending,
-//          }
-//      ],
-//      "wrong data"
-//    );
-//  }
-//
+  #[test]
+  fn round_trip_via_sync_and_open_preserves_data() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("memos.json");
+
+    let memos = Memos {
+      path: path.clone(),
+      inner: vec![
+          Memo {
+            text: "foo".to_string(),
+            status: Status::Pending,
+          },
+          Memo {
+            text: "bar".to_string(),
+            status: Status::Pending,
+          },
+      ],
+    };
+    
+    memos.sync().unwrap();
+    let memos_2 = Memos::open(&path).unwrap();
+
+    assert_eq!(memos.inner, memos_2.inner, "Wrong data");
+  }
   
   #[test]
   fn should_write_vec_to_file() {
