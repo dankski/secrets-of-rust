@@ -1,9 +1,19 @@
 use anyhow::{Context, Result, bail};
+use clap::{arg, Parser};
 
 use std::fmt::Display;
 
 use reqwest::blocking::RequestBuilder;
 use serde_json::Value;
+
+#[derive(Parser)]
+struct Args {
+  #[arg(required = true)]
+  locaction: Vec<String>,
+
+  #[arg(short, long, env = "WEATHERSTACK_API_KEY", required = true)]
+  api_key: String,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Weather {
