@@ -7,19 +7,18 @@ use reqwest::blocking::RequestBuilder;
 use serde_json::Value;
 
 
-#[derive(Parser)]
-struct Args {
-  #[arg(required = true)]
-  locaction: Vec<String>,
-
-  #[arg(short, long, env = "WEATHERSTACK_API_KEY", required = true)]
-  api_key: String,
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Weather {
-  temperature: f64,
+  pub temperature: f64,
   summary: String,
+}
+
+impl Weather {
+  #[must_use]
+  pub fn into_fahrenheit(mut self) -> Self {
+    self.temperature = self.temperature * 1.8 + 32.0;
+    self
+  }
 }
 
 pub struct Weatherstack {
@@ -42,6 +41,7 @@ impl Weatherstack {
     let weather = deserialize(&resp.text()?)?;
     Ok(weather)
   }
+
 }
 
 impl Display for Weather {
@@ -179,5 +179,19 @@ mod tests {
       },
       "Wrong weather"
     );
+  }
+
+  #[test]
+  fn into_fahrenheit_fn_correctly_converts_temparture() {
+    let weather = Weather {
+      temperature: 10.0,
+      summary: "Partly cloudy".into(),
+    };
+
+    assert_eq!(weather.into_fahrenheit(), Weather {
+      temperature: 50.0,
+      summary: "Partly cloudy".into(),
+      "wrong weather"
+    })
   }
 }
