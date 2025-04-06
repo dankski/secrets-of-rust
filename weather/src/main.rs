@@ -1,15 +1,33 @@
 use anyhow::Result;
+use clap::Parser;
 
-use std::env;
 
-use weather::get_weather;
+
+use weather::Weatherstack;
+
+#[derive(Parser)]
+/// Shows the current weather for a given location.
+struct Args {
+    #[arg(
+        short,
+        long,
+        env = "WEATHERSTACK_API_KEY",
+        required = true
+    )]
+    /// Weatherstack API key
+    api_key: String,
+    #[arg(required = true)]
+    /// Example: "London,UK"
+    location: Vec<String>,
+}
 
 fn main() -> Result<()> {
-  let args: Vec<_> = env::args().skip(1).collect();
-  let location = args.join(" ");
-  let api_key = env::var("WEATHERSTACK_API_KEY")?;
-  let weather = get_weather(&location, &api_key)?;
-  
+  let args = Args::parse();
+  let location = args.location.join(" ");
+  let ws = Weatherstack::new(&args.api_key);
+  let weather = ws.get_weather(&location)?;
+
   println!("{weather}");
   Ok(())
 }
+
