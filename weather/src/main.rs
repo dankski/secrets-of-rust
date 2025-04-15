@@ -11,7 +11,7 @@ struct Args {
     api_key: String,
 
     /// Report temperature in Fahrenheit
-    #[arg(required = true)]
+    #[arg(required = false)]
     #[arg(short, long)]
     fahrenheit: bool,
 
@@ -27,11 +27,12 @@ fn main() -> Result<()> {
     let weather = ws.get_weather(&location)?;
 
     println!(
-        "{}",
+        "{} {}",
+        weather.summary,
         if args.fahrenheit {
-            weather.into_fahrenheit()
+          format!("{:.1}ºF", weather.temperature.as_fahrenheit())
         } else {
-            weather
+          format!("{:.1}ºC", weather.temperature.as_celsius())
         }
     );
     Ok(())
