@@ -188,10 +188,12 @@ mod tests {
       summary: "Partly cloudy".into(),
     };
 
-    assert_eq!(weather.into_fahrenheit(), Weather {
-      temperature: 50.0,
-      summary: "Partly cloudy".into(),
-      "wrong weather"
-    })
+    assert_eq!(weather.into_fahrenheit(), 
+      Weather {
+        temperature: 50.0,
+        summary: "Partly cloudy".into(),
+      },
+      "Wrong weather"
+    );
   }
 }
